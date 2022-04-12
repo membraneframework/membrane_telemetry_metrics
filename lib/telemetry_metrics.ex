@@ -1,21 +1,24 @@
 defmodule Membrane.TelemetryMetrics do
   @moduledoc false
 
-  @enable_all_events Application.compile_env(
-                       :membrane_telemetry_matrics,
-                       :enable_all_events,
-                       true
-                     )
-  @enabled_events Application.compile_env(:membrane_telemetry_matrics, :enabled_events, [])
+  @emit_events Application.compile_env(:membrane_telemetry_metrics, :emit_events, [])
 
   defmacro conditional_execute(func, event_name, measurmets \\ %{}, metadata \\ %{}) do
-    enable? = @enable_all_events or Enum.member?(event_name, @enabled_events)
-    do_conditional_execute(func, event_name, measurmets, metadata, enable?)
+    emit? = emit_event?(event_name, @emit_events)
+    do_conditional_execute(func, event_name, measurmets, metadata, emit?)
   end
 
   defmacro execute(event_name, measurments \\ %{}, metadata \\ %{}) do
-    enable? = @enable_all_events or Enum.member?(event_name, @enabled_events)
-    do_execute(event_name, measurments, metadata, enable?)
+    emit? = emit_event?(event_name, @emit_events)
+    do_execute(event_name, measurments, metadata, emit?)
+  end
+
+  defp emit_event?(event_name, emmitted_events) do
+    case emmitted_events do
+      :all -> true
+      list when is_list(list) -> event_name in list
+      _else -> false
+    end
   end
 
   defp do_conditional_execute(func, event_name, measurments, metadata, true = _enable?) do
@@ -32,8 +35,6 @@ defmodule Membrane.TelemetryMetrics do
 
   defp do_conditional_execute(func, event_name, measurments, metadata, false = _enable?) do
     quote do
-      # A hack to suppress the 'unused variable' warnings
-
       fn ->
         _unused = unquote(func)
         _unused = unquote(event_name)
