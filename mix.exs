@@ -38,6 +38,7 @@ defmodule Membrane.TelemetryMetrics.Mixfile do
   defp deps do
     [
       {:telemetry, "~> 1.0"},
+      {:telemetry_metrics, "~> 0.6.1"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
