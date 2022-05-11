@@ -18,16 +18,36 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     GenServer.call(reporter, :scrape, timeout)
   end
 
+  @spec scrape_and_cleanup(reporter(), non_neg_integer()) :: report()
+  def scrape_and_cleanup(reporter, timeout \\ 5000) do
+    GenServer.call(reporter, :scrape_and_cleanup, timeout)
+  end
+
   @impl true
   def init(init_arg) do
     metrics = init_arg[:metrics]
     ets_tables = Enum.map(metrics, &attach_handler_and_get_ets/1)
+
     {:ok, %{metrics: metrics, ets_tables: ets_tables}}
   end
 
   @impl true
   def handle_call(:scrape, _from, state) do
-    report = Enum.map(state.ets_tables, fn ets -> {ets, get_metric_report(ets)} end)
+    report =
+      Enum.map(state.ets_tables, fn ets ->
+        {ets, get_metric_report(ets)}
+      end)
+
+    {:reply, report, state}
+  end
+
+  @impl true
+  def handle_call(:scrape_and_cleanup, _from, state) do
+    report =
+      Enum.map(state.ets_tables, fn ets ->
+        {ets, get_metric_report_and_do_clanup(ets)}
+      end)
+
     {:reply, report, state}
   end
 
@@ -49,11 +69,23 @@ defmodule Membrane.TelemetryMetrics.Reporter do
 
   defp get_metric_report(ets_table) do
     :ets.tab2list(ets_table)
-    |> Enum.map(fn {key, value} -> {Enum.reverse(key), value} end)
+    |> aggregate_report()
+  end
+
+  def get_metric_report_and_do_clanup(ets_table) do
+    :ets.tab2list(ets_table)
+    |> Enum.flat_map(fn {key, _val} -> :ets.take(ets_table, key) end)
     |> aggregate_report()
   end
 
   defp aggregate_report(content) do
+    Enum.map(content, fn {key, value} ->
+      {Enum.reverse(key), value}
+    end)
+    |> do_aggregate_report()
+  end
+
+  defp do_aggregate_report(content) do
     aggregated_content = Enum.filter(content, fn {key, _val} -> key == [] end)
     content_to_aggregate = Enum.filter(content, fn {key, _val} -> key != [] end)
 
@@ -64,7 +96,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
       # value fun
       fn {[_head | tail], val} -> {tail, val} end
     )
-    |> Enum.map(fn {key, subcontent} -> {key, aggregate_report(subcontent)} end)
+    |> Enum.map(fn {key, subcontent} -> {key, do_aggregate_report(subcontent)} end)
     |> Enum.concat(aggregated_content)
   end
 end
