@@ -4,15 +4,18 @@ defmodule Membrane.TelemetryMetrics.Reporter.Sum do
   @spec attach(Telemetry.Metrics.Sum.t(), :ets.tid() | atom()) :: :ok | {:error, :already_exists}
   def attach(metric, ets) do
     config = %{ets: ets, measurement: metric.measurement}
-    :telemetry.attach(ets, metric.event_name, &handle_event/4, config)
+    :telemetry.attach(ets, metric.event_name, &__MODULE__.handle_event/4, config)
   end
 
-  defp handle_event(_event_name, measurements, metadata, config) do
+  @spec handle_event([atom(), ...], map(), map(), term()) :: :ok
+  def handle_event(_event_name, measurements, metadata, config) do
     %{ets: ets, measurement: measurement} = config
     key = metadata.telemetry_metadata
-    value = measurements[measurement]
 
-    :ets.update_counter(ets, key, value, {key, 0})
+    if Map.has_key?(measurements, measurement) do
+      value = measurements[measurement]
+      :ets.update_counter(ets, key, value, {key, 0})
+    end
 
     :ok
   end

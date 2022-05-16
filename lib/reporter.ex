@@ -5,7 +5,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
 
   alias Membrane.TelemetryMetrics.Reporter.{Counter, LastValue, Sum}
 
-  @type reporter() :: pid()
+  @type reporter() :: pid() | atom()
   @type report() :: map()
 
   @spec start_link(list(), GenServer.options()) :: GenServer.on_start()
@@ -26,17 +26,27 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   @impl true
   def init(init_arg) do
     metrics = init_arg[:metrics]
-    ets_tables = Enum.map(metrics, &attach_handler_and_get_ets/1)
 
-    {:ok, %{metrics: metrics, ets_tables: ets_tables}}
+    metrics_data =
+      Enum.map(metrics, fn metric ->
+        %{
+          metric: metric,
+          name: Enum.join(metric.name, "."),
+          ets_table: attach_handler_and_get_ets(metric)
+        }
+      end)
+
+    {:ok, %{metrics_data: metrics_data}}
   end
 
   @impl true
   def handle_call(:scrape, _from, state) do
     report =
-      Enum.map(state.ets_tables, fn ets ->
-        {ets, get_metric_report(ets)}
+      Enum.map(state.metrics_data, fn metric_data ->
+        {metric_data.name, get_metric_report(metric_data.ets_table)}
       end)
+      |> Enum.map(&move_metric_down_in_report/1)
+      |> merge_metrics_reports()
 
     {:reply, report, state}
   end
@@ -44,27 +54,23 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   @impl true
   def handle_call(:scrape_and_cleanup, _from, state) do
     report =
-      Enum.map(state.ets_tables, fn ets ->
-        {ets, get_metric_report_and_do_clanup(ets)}
+      Enum.map(state.metrics_data, fn metric_data ->
+        {metric_data.name, get_metric_report_and_do_clanup(metric_data.ets_table)}
       end)
 
     {:reply, report, state}
   end
 
   defp attach_handler_and_get_ets(metric) do
-    ets_name =
-      Enum.join(metric.name, ".")
-      |> String.to_atom()
-
-    ets = :ets.new(ets_name, [:named_table, :public, :set, {:write_concurrency, true}])
+    ets_table = :ets.new(:metric_table, [:public, :set, {:write_concurrency, true}])
 
     case metric do
-      %Telemetry.Metrics.Counter{} -> Counter.attach(metric, ets)
-      %Telemetry.Metrics.LastValue{} -> LastValue.attach(metric, ets)
-      %Telemetry.Metrics.Sum{} -> Sum.attach(metric, ets)
+      %Telemetry.Metrics.Counter{} -> Counter.attach(metric, ets_table)
+      %Telemetry.Metrics.LastValue{} -> LastValue.attach(metric, ets_table)
+      %Telemetry.Metrics.Sum{} -> Sum.attach(metric, ets_table)
     end
 
-    ets
+    ets_table
   end
 
   defp get_metric_report(ets_table) do
@@ -72,7 +78,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     |> aggregate_report()
   end
 
-  def get_metric_report_and_do_clanup(ets_table) do
+  defp get_metric_report_and_do_clanup(ets_table) do
     :ets.tab2list(ets_table)
     |> Enum.flat_map(fn {key, _val} -> :ets.take(ets_table, key) end)
     |> aggregate_report()
@@ -86,8 +92,9 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   end
 
   defp do_aggregate_report(content) do
-    aggregated_content = Enum.filter(content, fn {key, _val} -> key == [] end)
     content_to_aggregate = Enum.filter(content, fn {key, _val} -> key != [] end)
+
+    aggregated_content = Enum.filter(content, fn {key, _val} -> key == [] end)
 
     content_to_aggregate
     |> Enum.group_by(
@@ -98,5 +105,22 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     )
     |> Enum.map(fn {key, subcontent} -> {key, do_aggregate_report(subcontent)} end)
     |> Enum.concat(aggregated_content)
+  end
+
+  defp move_metric_down_in_report({metric_name, report}) do
+    Enum.map(report, fn
+      {[], val} -> {metric_name, val}
+      {key, sub_report} -> {key, move_metric_down_in_report({metric_name, sub_report})}
+    end)
+  end
+
+  defp merge_metrics_reports(reports) do
+    Enum.reduce(reports, &merge_metrics_reports/2)
+  end
+
+  def merge_metrics_reports(report1, report2) do
+    Map.merge(Map.new(report1), Map.new(report2), fn _key, val1, val2 ->
+      merge_metrics_reports(val1, val2)
+    end)
   end
 end
