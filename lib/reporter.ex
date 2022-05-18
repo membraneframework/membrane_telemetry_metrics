@@ -1,5 +1,18 @@
 defmodule Membrane.TelemetryMetrics.Reporter do
-  @moduledoc false
+  @moduledoc """
+  Attaches handlers to :telemetry events basing on received list of metrics definitions.
+  Attached handlers store metrics values in ETS tables.
+  These values can be get by calling `scrape/2` function or also reseted by calling `scrape_and_cleanup/2`.
+
+  Currently supported types of metrics are:
+   - `Telemetry.Metrics.Counter`
+   - `Telemetry.Metrics.Sum`
+   - `Telemetry.Metrics.LastValue`
+
+  Currently supported fields of metrics definitions are: `:name`, `:event_name`, `measurement`.
+  Fields `:keep`, `:reporter_options`, `tag_values`, `tags`, `:unit` and functionalities related to them are not supported yet.
+  Metrics values are grouped by  value related to key `:telemetry_metadata` in event `metadata`.
+  """
 
   use GenServer
 
@@ -57,6 +70,8 @@ defmodule Membrane.TelemetryMetrics.Reporter do
       Enum.map(state.metrics_data, fn metric_data ->
         {metric_data.name, get_metric_report_and_do_clanup(metric_data.ets_table)}
       end)
+      |> Enum.map(&move_metric_down_in_report/1)
+      |> merge_metrics_reports()
 
     {:reply, report, state}
   end
@@ -118,9 +133,11 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     Enum.reduce(reports, &merge_metrics_reports/2)
   end
 
-  def merge_metrics_reports(report1, report2) do
-    Map.merge(Map.new(report1), Map.new(report2), fn _key, val1, val2 ->
-      merge_metrics_reports(val1, val2)
-    end)
+  defp merge_metrics_reports(report1, report2) do
+    Map.merge(
+      Map.new(report1),
+      Map.new(report2),
+      fn _key, val1, val2 -> merge_metrics_reports(val1, val2) end
+    )
   end
 end

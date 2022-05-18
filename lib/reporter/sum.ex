@@ -10,10 +10,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Sum do
   @spec handle_event([atom(), ...], map(), map(), term()) :: :ok
   def handle_event(_event_name, measurements, metadata, config) do
     %{ets: ets, measurement: measurement} = config
-    key = metadata.telemetry_metadata
 
-    if Map.has_key?(measurements, measurement) do
-      value = measurements[measurement]
+    with %{^measurement => value} <- measurements do
+      key = metadata.telemetry_metadata
       :ets.update_counter(ets, key, value, {key, 0})
     end
 
