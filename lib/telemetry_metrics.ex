@@ -13,6 +13,25 @@ defmodule Membrane.TelemetryMetrics do
     do_execute(event_name, measurments, metadata, emit?)
   end
 
+  defmacro register_event_with_telemetry_metadata(event_name, telemetry_metadata) do
+    if emit_event?(event_name, @emit_events) do
+      quote do
+        Task.start_link(
+          Membrane.TelemetryMetrics.Monitor,
+          :run,
+          [self(), unquote(event_name), unquote(telemetry_metadata)]
+        )
+      end
+    else
+      quote do
+        fn ->
+          _unused = unquote(event_name)
+          _unused = unquote(telemetry_metadata)
+        end
+      end
+    end
+  end
+
   defp emit_event?(event_name, emmitted_events) do
     case emmitted_events do
       :all -> true
