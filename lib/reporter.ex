@@ -1,8 +1,8 @@
 defmodule Membrane.TelemetryMetrics.Reporter do
   @moduledoc """
-  Attaches handlers to :telemetry events basing on received list of metrics definitions.
-  Attached handlers store metrics values in ETS tables.
-  These values can be get by calling `scrape/2` function or also reseted by calling `scrape_and_cleanup/2`.
+  Attaches handlers to :telemetry events based on the received list of metrics definitions.
+  The attached handlers store metrics values in ETS tables.
+  These values can be gotten by calling `scrape/2` function or also reset by calling `scrape_and_cleanup/2`.
 
   Currently supported types of metrics are:
    - `Telemetry.Metrics.Counter`
@@ -21,7 +21,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   @type reporter() :: pid() | atom()
   @type report() :: map()
 
-  @spec start_link(list(), GenServer.options()) :: GenServer.on_start()
+  @spec start_link(Keyword.t(), GenServer.options()) :: GenServer.on_start()
   def start_link(init_arg, options \\ []) do
     GenServer.start_link(__MODULE__, init_arg, options)
   end
@@ -38,10 +38,9 @@ defmodule Membrane.TelemetryMetrics.Reporter do
 
   @impl true
   def init(init_arg) do
-    metrics = init_arg[:metrics]
-
     metrics_data =
-      Enum.map(metrics, fn metric ->
+      Keyword.get(init_arg, :metrics, [])
+      |> Enum.map(fn metric ->
         %{
           metric: metric,
           name: Enum.join(metric.name, "."),
@@ -107,9 +106,8 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   end
 
   defp do_aggregate_report(content) do
-    content_to_aggregate = Enum.filter(content, fn {key, _val} -> key != [] end)
-
-    aggregated_content = Enum.filter(content, fn {key, _val} -> key == [] end)
+    {aggregated_content, content_to_aggregate} =
+      Enum.split_with(content, fn {key, _val} -> key == [] end)
 
     content_to_aggregate
     |> Enum.group_by(
