@@ -16,11 +16,7 @@ defmodule Membrane.TelemetryMetrics do
   defmacro register_event_with_telemetry_metadata(event_name, telemetry_metadata) do
     if emit_event?(event_name, @emit_events) do
       quote do
-        Task.start_link(
-          Membrane.TelemetryMetrics.Monitor,
-          :run,
-          [self(), unquote(event_name), unquote(telemetry_metadata)]
-        )
+        Membrane.TelemetryMetrics.Monitor.start(event_name, telemetry_metadata)
       end
     else
       quote do
