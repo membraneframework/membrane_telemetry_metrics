@@ -11,7 +11,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
 
   Currently supported fields of metrics definitions are: `:name`, `:event_name`, `measurement`.
   Fields `:keep`, `:reporter_options`, `tag_values`, `tags`, `:unit` and functionalities related to them are not supported yet.
-  Metrics values are grouped by  value related to key `:telemetry_metadata` in event `metadata`.
+  Metrics values are grouped by value related to key `:telemetry_metadata` in event `metadata`.
   """
 
   use GenServer
