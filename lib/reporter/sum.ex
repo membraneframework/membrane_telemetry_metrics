@@ -3,12 +3,10 @@ defmodule Membrane.TelemetryMetrics.Reporter.Sum do
 
   alias Membrane.TelemetryMetrics.Utils
 
-  @spec attach(Telemetry.Metrics.Sum.t(), :ets.tid() | atom()) :: :ok | {:error, :already_exists}
+  @spec attach(Telemetry.Metrics.Sum.t(), :ets.tid() | atom()) :: [reference()]
   def attach(metric, ets) do
     config = %{ets: ets, measurement: metric.measurement}
-
-    :telemetry.attach(ets, metric.event_name, &__MODULE__.handle_event/4, config)
-    Utils.attach_cleanup_handler(metric.event_name, ets)
+    Utils.attach_metric_handler(metric.event_name, &__MODULE__.handle_event/4, config)
   end
 
   @spec handle_event([atom(), ...], map(), map(), term()) :: :ok

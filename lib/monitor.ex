@@ -8,11 +8,15 @@ defmodule Membrane.TelemetryMetrics.Monitor do
 
   @spec start([atom(), ...], [{atom(), any()}]) :: {:ok, pid()}
   def start(event_name, telemetry_metadata) do
-    Task.start(
-      __MODULE__,
-      :run,
-      [self(), event_name, telemetry_metadata]
-    )
+    pid =
+      Process.spawn(
+        __MODULE__,
+        :run,
+        [self(), event_name, telemetry_metadata],
+        []
+      )
+
+    {:ok, pid}
   end
 
   @spec run(pid() | atom(), [atom(), ...], [{atom(), any()}]) :: :ok

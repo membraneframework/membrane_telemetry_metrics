@@ -16,13 +16,13 @@ defmodule Membrane.TelemetryMetrics.Reporter do
 
   use GenServer
 
-  alias Membrane.TelemetryMetrics.Reporter.{Counter, LastValue, Sum}
-
   @type reporter() :: pid() | atom()
   @type report() :: map()
 
-  @spec start_link(Keyword.t(), GenServer.options()) :: GenServer.on_start()
+  @spec start_link([metrics: [Telemetry.Metrics.t()]], GenServer.options()) ::
+          GenServer.on_start()
   def start_link(init_arg, options \\ []) do
+    options = Keyword.put(options, :trap_exit, true)
     GenServer.start_link(__MODULE__, init_arg, options)
   end
 
@@ -41,10 +41,14 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     metrics_data =
       Keyword.get(init_arg, :metrics, [])
       |> Enum.map(fn metric ->
+        ets_table = create_ets_table()
+        handler_ids = attach_handlers(metric, ets_table)
+
         %{
           metric: metric,
           name: Enum.join(metric.name, "."),
-          ets_table: attach_handler_and_get_ets(metric)
+          ets_table: ets_table,
+          handler_ids: handler_ids
         }
       end)
 
@@ -75,16 +79,29 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     {:reply, report, state}
   end
 
-  defp attach_handler_and_get_ets(metric) do
-    ets_table = :ets.new(:metric_table, [:public, :set, {:write_concurrency, true}])
+  @impl true
+  def terminate(_reason, state) do
+    Enum.each(state.metrics_data, fn metric_data ->
+      %{
+        handler_ids: handler_ids,
+        ets_table: ets_table
+      } = metric_data
 
+      Enum.each(handler_ids, &:telemetry.detach/1)
+      :ets.delete(ets_table)
+    end)
+  end
+
+  defp create_ets_table(),
+    do: :ets.new(:metric_table, [:public, :set, {:write_concurrency, true}])
+
+  defp attach_handlers(metric, ets_table) do
     case metric do
-      %Telemetry.Metrics.Counter{} -> Counter.attach(metric, ets_table)
-      %Telemetry.Metrics.LastValue{} -> LastValue.attach(metric, ets_table)
-      %Telemetry.Metrics.Sum{} -> Sum.attach(metric, ets_table)
+      %Telemetry.Metrics.Counter{} -> __MODULE__.Counter
+      %Telemetry.Metrics.LastValue{} -> __MODULE__.LastValue
+      %Telemetry.Metrics.Sum{} -> __MODULE__.Sum
     end
-
-    ets_table
+    |> apply(:attach, [metric, ets_table])
   end
 
   defp get_metric_report(ets_table) do

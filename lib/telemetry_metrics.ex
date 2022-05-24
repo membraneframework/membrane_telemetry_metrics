@@ -1,20 +1,21 @@
 defmodule Membrane.TelemetryMetrics do
   @moduledoc false
 
-  @emit_events Application.compile_env(:membrane_telemetry_metrics, :emit_events, [])
+  @enable Application.compile_env(:membrane_telemetry_metrics, :enable, false)
+  @events Application.compile_env(:membrane_telemetry_metrics, :events, :all)
 
   defmacro conditional_execute(func, event_name, measurmets \\ %{}, metadata \\ %{}) do
-    emit? = emit_event?(event_name, @emit_events)
+    emit? = emit_event?(event_name)
     do_conditional_execute(func, event_name, measurmets, metadata, emit?)
   end
 
   defmacro execute(event_name, measurments \\ %{}, metadata \\ %{}) do
-    emit? = emit_event?(event_name, @emit_events)
+    emit? = emit_event?(event_name)
     do_execute(event_name, measurments, metadata, emit?)
   end
 
   defmacro register_event_with_telemetry_metadata(event_name, telemetry_metadata) do
-    if emit_event?(event_name, @emit_events) do
+    if emit_event?(event_name) do
       quote do
         Membrane.TelemetryMetrics.Monitor.start(
           unquote(event_name),
@@ -31,11 +32,12 @@ defmodule Membrane.TelemetryMetrics do
     end
   end
 
-  defp emit_event?(event_name, emmitted_events) do
-    case emmitted_events do
-      :all -> true
-      list when is_list(list) -> event_name in list
-      _else -> false
+  defp emit_event?(event) do
+    cond do
+      not @enable -> false
+      @events == :all -> true
+      is_list(@events) -> event in @events
+      true -> false
     end
   end
 
