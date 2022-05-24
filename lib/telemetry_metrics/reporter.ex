@@ -36,6 +36,11 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     GenServer.call(reporter, :scrape_and_cleanup, timeout)
   end
 
+  @spec stop(reporter()) :: :ok
+  def stop(reporter) do
+    GenServer.stop(reporter)
+  end
+
   @impl true
   def init(init_arg) do
     metrics_data =
@@ -145,7 +150,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   end
 
   defp merge_metrics_reports(reports) do
-    Enum.reduce(reports, &merge_metrics_reports/2)
+    Enum.reduce(reports, %{}, &merge_metrics_reports/2)
   end
 
   defp merge_metrics_reports(report1, report2) do
