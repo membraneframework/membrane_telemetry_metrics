@@ -22,6 +22,8 @@ end
 
 ## Usage
 
+The usage example below illustrates, how you can use this tool to aggregate metrics and generate reports containing their values. In this case, we have a scenario, where a couple of people are doing their shopping, and we want to have access to the reports with some metrics about them, without calling each of these people directly.
+
 To benefit from of full functionality offered by this tool, you have to use both `Membrane.TelemetryMetrics` and `Mebrane.TelemetryMetrics.Reporter`. 
 
 First, put 
@@ -29,7 +31,6 @@ First, put
 config :membrane_telemetry_metrics, emit_events: :all
 ```
 in your `config.exs`. Alternatively, instead of `:all`, you can also pass there a list of emitted events, in this case, it will be `[[:shopping]]`
-
 
 Let's assume, that you want to track three metrics: 
  * `cash_spent`
@@ -58,9 +59,12 @@ metrics =
 
 Then, you have to start `Mebrane.TelemetryMetrics.Reporter`. It can be made by calling 
 ```elixir
-  Membrane.TelemetryMetrics.Reporter.start_link([metrics: metrics], name: ShoppingReporter)
+Membrane.TelemetryMetrics.Reporter.start_link(
+  [metrics: metrics], 
+  name: ShoppingReporter
+)
 ```
-but the suggested way is to do it under `Supervisor` tree.
+but the suggested way is to do it under `Supervisor` tree, in `Application` module.
 
 Now, `ShoppingReporter` is ready to aggregate metrics from emitted events. But before that, we have to register our event in every process, that will emit it. Let's assume, that we want to aggregate data about three people: `James Smith`, `Mary Smith` and `Patricia Johnson`. Events with data about each of these people will be emitted in a different process.
 
@@ -181,7 +185,10 @@ Then, for example, if `Mary Smith`'s process exits, you will get a report like
 
 If a process registers an event by calling
 ```elixir
-Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(event_name, telmetry_metadata)
+Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(
+  event_name, 
+  telmetry_metadata
+)
 ```
 and exits after it, every metric that aggregated measurements from an event with `event_name` will drop its values held for a specific value of `telemetry_metadata`, as in the example above `Mary Smith` has disappeared from the report, after the end of her's process.
 
