@@ -6,7 +6,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
   alias Membrane.TelemetryMetrics.Reporter
 
   test "Scrape from reporter with empty metrics list" do
-    {:ok, reporter} = Reporter.start_link(metrics: [])
+    {:ok, reporter} = Reporter.start_link([])
 
     assert %{} == Reporter.scrape(reporter)
 
@@ -15,26 +15,26 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
 
   test "Scrape from reporter without executed events" do
     metric = Telemetry.Metrics.counter("counter", event_name: [:event])
-    {:ok, reporter} = Reporter.start_link(metrics: [metric])
+    {:ok, reporter} = Reporter.start_link([metric])
 
     assert %{} == Reporter.scrape(reporter)
 
     Reporter.stop(reporter)
   end
 
-  test "Scrape from reporter with few executed events and empty telemetry_metadata" do
+  test "Scrape from reporter with few executed events and empty label" do
     metrics = [
       Telemetry.Metrics.counter("counter", event_name: [:event]),
       Telemetry.Metrics.sum("sum", event_name: [:event], measurement: :number),
       Telemetry.Metrics.last_value("last_value", event_name: [:event], measurement: :number)
     ]
 
-    {:ok, reporter} = Reporter.start_link(metrics: metrics)
+    {:ok, reporter} = Reporter.start_link(metrics)
 
-    Membrane.TelemetryMetrics.register_event_with_telemetry_metadata([:event], [])
+    Membrane.TelemetryMetrics.register([:event], [])
 
     for number <- [-5, 1, 15, 100, 32, 2] do
-      Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{telemetry_metadata: []})
+      Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{}, [])
     end
 
     assert %{
@@ -46,21 +46,19 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     Reporter.stop(reporter)
   end
 
-  test "Scrape from reporter with few executed events and single_value of telemetry_metadata" do
+  test "Scrape from reporter with few executed events and single value of label" do
     metrics = [
       Telemetry.Metrics.counter("counter", event_name: [:event]),
       Telemetry.Metrics.sum("sum", event_name: [:event], measurement: :number),
       Telemetry.Metrics.last_value("last_value", event_name: [:event], measurement: :number)
     ]
 
-    {:ok, reporter} = Reporter.start_link(metrics: metrics)
+    {:ok, reporter} = Reporter.start_link(metrics)
 
-    Membrane.TelemetryMetrics.register_event_with_telemetry_metadata([:event], id: 1)
+    Membrane.TelemetryMetrics.register([:event], id: 1)
 
     for number <- [-5, 1, 15, 100, 32, 2] do
-      Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{
-        telemetry_metadata: [id: 1]
-      })
+      Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{}, id: 1)
     end
 
     assert %{{:id, 1} => %{"counter" => 6, "sum" => 145, "last_value" => 2}} ==
@@ -76,17 +74,14 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
       Telemetry.Metrics.last_value("last_value", event_name: [:event], measurement: :number)
     ]
 
-    {:ok, reporter} = Reporter.start_link(metrics: metrics)
+    {:ok, reporter} = Reporter.start_link(metrics)
 
-    telemetry_metadatas = [[id: 1], [sub_id: "A", id: 2], [sub_id: "B", id: 2]]
+    labels = [[id: 1], [sub_id: "A", id: 2], [sub_id: "B", id: 2]]
 
-    for tm <- telemetry_metadatas,
-        do: Membrane.TelemetryMetrics.register_event_with_telemetry_metadata([:event], tm)
+    for label <- labels, do: Membrane.TelemetryMetrics.register([:event], label)
 
-    for number <- [-5, 1, 15, 100, 32, 2], tm <- telemetry_metadatas do
-      Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{
-        telemetry_metadata: tm
-      })
+    for number <- [-5, 1, 15, 100, 32, 2], label <- labels do
+      Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{}, label)
     end
 
     assert %{
@@ -101,22 +96,21 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     Reporter.stop(reporter)
   end
 
-  test "Scrape from reporter with few executed events with different telemetry_metadata" do
+  test "Scrape from reporter with few executed events with different labels" do
     metrics = [
       Telemetry.Metrics.counter("counter_a", event_name: [:event_a]),
       Telemetry.Metrics.counter("counter_b", event_name: [:event_b])
     ]
 
-    {:ok, reporter} = Reporter.start_link(metrics: metrics)
+    {:ok, reporter} = Reporter.start_link(metrics)
 
-    telemetry_metadatas = [[id: 1], [id: 2], [id: 3]]
+    labels = [[id: 1], [id: 2], [id: 3]]
 
-    for tm <- telemetry_metadatas,
-        do: Membrane.TelemetryMetrics.register_event_with_telemetry_metadata([:event], tm)
+    for label <- labels, do: Membrane.TelemetryMetrics.register([:event], label)
 
-    for {event, metadatas} <- [{[:event_a], [[id: 1], [id: 2]]}, {[:event_b], [[id: 2], [id: 3]]}] do
-      for tm <- metadatas do
-        Membrane.TelemetryMetrics.execute(event, %{}, %{telemetry_metadata: tm})
+    for {event, labels} <- [{[:event_a], [[id: 1], [id: 2]]}, {[:event_b], [[id: 2], [id: 3]]}] do
+      for label <- labels do
+        Membrane.TelemetryMetrics.execute(event, %{}, %{}, label)
       end
     end
 
@@ -135,9 +129,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
       Telemetry.Metrics.counter("counter_b", event_name: [:event_b])
     ]
 
-    {:ok, reporter} = Reporter.start_link(metrics: metrics)
+    {:ok, reporter} = Reporter.start_link(metrics)
 
-    telemetry_metadatas = [
+    labels = [
       [id: 1],
       [sub_id: "A", id: 1],
       [sub_id: "B", id: 1],
@@ -148,15 +142,10 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
       [sub_sub_id: :a, sub_id: "A", id: 3]
     ]
 
-    for tm <- telemetry_metadatas,
-        do: Membrane.TelemetryMetrics.register_event_with_telemetry_metadata([:event], tm)
+    for label <- labels, do: Membrane.TelemetryMetrics.register([:event], label)
 
-    for tm <- telemetry_metadatas do
-      for event <- [[:event_a], [:event_b]] do
-        for _i <- 1..10 do
-          Membrane.TelemetryMetrics.execute(event, %{}, %{telemetry_metadata: tm})
-        end
-      end
+    for label <- labels, event <- [[:event_a], [:event_b]], _i <- 1..10 do
+      Membrane.TelemetryMetrics.execute(event, %{}, %{}, label)
     end
 
     assert %{
@@ -194,19 +183,17 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
       Telemetry.Metrics.counter("counter", event_name: [:event])
     ]
 
-    {:ok, reporter} = Reporter.start_link(metrics: metrics)
+    {:ok, reporter} = Reporter.start_link(metrics)
     parent = self()
 
     [{:ok, task_1}, {:ok, task_2}] =
-      for id <- [1, 2] do
+      for label <- [[id: 1], [id: 2]] do
         Task.start(fn ->
-          tm = [id: id]
-
-          Membrane.TelemetryMetrics.register_event_with_telemetry_metadata([:event], tm)
+          Membrane.TelemetryMetrics.register([:event], label)
 
           receive do
             :emit_event ->
-              Membrane.TelemetryMetrics.execute([:event], %{}, %{telemetry_metadata: tm})
+              Membrane.TelemetryMetrics.execute([:event], %{}, %{}, label)
               send(parent, :event_emitted)
           end
 

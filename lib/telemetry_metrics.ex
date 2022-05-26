@@ -11,36 +11,78 @@ defmodule Membrane.TelemetryMetrics do
   Evaluates to conditional call to `:telemetry.execute/3` or to nothing, depending on if specific event is enabled in config file.
   If event is enabled, `:telemetry.execute/3` will be executed only if value returned by call to `func` will be truthly.
   """
-  defmacro conditional_execute(func, event_name, measurmets \\ %{}, metadata \\ %{}) do
-    emit? = emit_event?(event_name)
-    do_conditional_execute(func, event_name, measurmets, metadata, emit?)
+  defmacro conditional_execute(
+             func,
+             event_name,
+             measurements \\ %{},
+             metadata \\ %{},
+             label \\ []
+           ) do
+    if emit_event?(event_name) do
+      quote do
+        if unquote(func).() do
+          metadata = Map.put(unquote(metadata), :membrane_telemetry_label, unquote(label))
+
+          :telemetry.execute(
+            unquote(event_name),
+            unquote(measurements),
+            metadata
+          )
+        end
+      end
+    else
+      quote do
+        fn ->
+          _unused = unquote(func)
+          _unused = unquote(event_name)
+          _unused = unquote(measurements)
+          _unused = unquote(metadata)
+          _unused = unquote(label)
+        end
+      end
+    end
   end
 
   @doc """
   Evaluates to call to `:telemetry.execute/3` or to nothing, depending on if specific event is enabled in config file.
   """
-  defmacro execute(event_name, measurments \\ %{}, metadata \\ %{}) do
-    emit? = emit_event?(event_name)
-    do_execute(event_name, measurments, metadata, emit?)
-  end
-
-  @doc """
-  Evalueates to call to `Membrane.TelemetryMetrics.Monitor.start/3` or to nothing, depending on if specific event is enabled in config file.
-  Should be called in every process, that will execute event linked with metric aggregated by some instance of `Membrane.TelemetryMetrics.Reporter`.
-  """
-  defmacro register_event_with_telemetry_metadata(event_name, telemetry_metadata) do
+  defmacro execute(event_name, measurments \\ %{}, metadata \\ %{}, label \\ []) do
     if emit_event?(event_name) do
       quote do
-        Membrane.TelemetryMetrics.Monitor.start(
+        metadata = Map.put(unquote(metadata), :membrane_telemetry_label, unquote(label))
+
+        :telemetry.execute(
           unquote(event_name),
-          unquote(telemetry_metadata)
+          unquote(measurments),
+          metadata
         )
       end
     else
       quote do
         fn ->
           _unused = unquote(event_name)
-          _unused = unquote(telemetry_metadata)
+          _unused = unquote(measurments)
+          _unused = unquote(metadata)
+          _unused = unquote(label)
+        end
+      end
+    end
+  end
+
+  @doc """
+  Evalueates to call to `Membrane.TelemetryMetrics.Monitor.start/3` or to nothing, depending on if specific event is enabled in config file.
+  Should be called in every process, that will execute event linked with metric aggregated by some instance of `Membrane.TelemetryMetrics.Reporter`.
+  """
+  defmacro register(event_name, label) do
+    if emit_event?(event_name) do
+      quote do
+        Membrane.TelemetryMetrics.Monitor.start(unquote(event_name), unquote(label))
+      end
+    else
+      quote do
+        fn ->
+          _unused = unquote(event_name)
+          _unused = unquote(label)
         end
       end
     end
@@ -52,49 +94,6 @@ defmodule Membrane.TelemetryMetrics do
       @events == :all -> true
       is_list(@events) -> event in @events
       true -> false
-    end
-  end
-
-  defp do_conditional_execute(func, event_name, measurments, metadata, true = _enable?) do
-    quote do
-      if unquote(func).() do
-        :telemetry.execute(
-          unquote(event_name),
-          unquote(measurments),
-          unquote(metadata)
-        )
-      end
-    end
-  end
-
-  defp do_conditional_execute(func, event_name, measurments, metadata, false = _enable?) do
-    quote do
-      fn ->
-        _unused = unquote(func)
-        _unused = unquote(event_name)
-        _unused = unquote(measurments)
-        _unused = unquote(metadata)
-      end
-    end
-  end
-
-  defp do_execute(event_name, measurments, metadata, true = _enable?) do
-    quote do
-      :telemetry.execute(
-        unquote(event_name),
-        unquote(measurments),
-        unquote(metadata)
-      )
-    end
-  end
-
-  defp do_execute(event_name, measurments, metadata, false = _enable?) do
-    quote do
-      fn ->
-        _unused = unquote(event_name)
-        _unused = unquote(measurments)
-        _unused = unquote(metadata)
-      end
     end
   end
 end

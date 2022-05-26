@@ -13,8 +13,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Sum do
   def handle_event(_event_name, measurements, metadata, config) do
     %{ets: ets, measurement: measurement} = config
 
-    with %{telemetry_metadata: key} <- metadata, %{^measurement => value} <- measurements do
-      :ets.update_counter(ets, key, value, {key, 0})
+    with %{membrane_telemetry_label: label} <- metadata,
+         %{^measurement => value} <- measurements do
+      :ets.update_counter(ets, label, value, {label, 0})
     end
 
     :ok

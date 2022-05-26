@@ -72,27 +72,27 @@ In `John Smith`'s process we will execute code
 ```elixir
 require Membrane.TelemetryMetrics
 
-Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(
+Membrane.TelemetryMetrics.register([:shopping], [name: "James", surname: "Smith"])
+
+Membrane.TelemetryMetrics.execute(
   [:shopping],
+  %{shop: "Grocery", payment: 10},
+  %{},
   [name: "James", surname: "Smith"]
 )
 
 Membrane.TelemetryMetrics.execute(
   [:shopping],
-  %{shop: "Grocery", payment: 10},
-  %{telemetry_metadata: [name: "James", surname: "Smith"]}
-)
-
-Membrane.TelemetryMetrics.execute(
-  [:shopping],
   %{shop: "Bakery", payment: 5},
-  %{telemetry_metadata: [name: "James", surname: "Smith"]}
+  %{},
+  [name: "James", surname: "Smith"]
 )
 
 Membrane.TelemetryMetrics.execute(
   [:shopping],
   %{shop: "Jeweller", payment: 100},
-  %{telemetry_metadata: [name: "James", surname: "Smith"]}
+  %{},
+  [name: "James", surname: "Smith"]
 )
 ```
 
@@ -100,21 +100,20 @@ In `Mary Smith`'s process we will execute code
 ```elixir
 require Membrane.TelemetryMetrics
 
-Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(
+Membrane.TelemetryMetrics.register([:shopping], [name: "Mary", surname: "Smith"])
+
+Membrane.TelemetryMetrics.execute(
   [:shopping],
+  %{shop: "Bookshop", payment: 25},
+  %{},
   [name: "Mary", surname: "Smith"]
 )
 
 Membrane.TelemetryMetrics.execute(
   [:shopping],
-  %{shop: "Bookshop", payment: 25},
-  %{telemetry_metadata: [name: "Mary", surname: "Smith"]}
-)
-
-Membrane.TelemetryMetrics.execute(
-  [:shopping],
   %{shop: "Butcher", payment: 15},
-  %{telemetry_metadata: [name: "Mary", surname: "Smith"]}
+  %{},
+  [name: "Mary", surname: "Smith"]
 )
 ```
 
@@ -122,7 +121,7 @@ In `Patricia Johnson`'s process we will execute code
 ```elixir
 require Membrane.TelemetryMetrics
 
-Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(
+Membrane.TelemetryMetrics.register(
   [:shopping],
   [name: "Patricia", surname: "Johnson"]
 )
@@ -130,7 +129,8 @@ Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(
 Membrane.TelemetryMetrics.execute(
   [:shopping],
   %{shop: "Newsagent", payment: 5},
-  %{telemetry_metadata: [name: "Patricia", surname: "Johnson"]}
+  %{},
+  [name: "Patricia", surname: "Johnson"]
 )
 ```
 
@@ -185,12 +185,9 @@ Then, for example, if `Mary Smith`'s process exits, you will get a report like
 
 If a process registers an event by calling
 ```elixir
-Membrane.TelemetryMetrics.register_event_with_telemetry_metadata(
-  event_name, 
-  telmetry_metadata
-)
+Membrane.TelemetryMetrics.register(event_name, label)
 ```
-and exits after it, every metric that aggregated measurements from an event with `event_name` will drop its values held for a specific value of `telemetry_metadata`, as in the example above `Mary Smith` has disappeared from the report, after the end of her's process.
+and exits after it, every metric that aggregated measurements from an event with `event_name` will drop its values held for a specific value of `label`, as in the example above `Mary Smith` has disappeared from the report, after the end of her's process.
 
 
 ## Copyright and License

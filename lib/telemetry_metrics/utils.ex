@@ -29,8 +29,8 @@ defmodule Membrane.TelemetryMetrics.Utils do
 
   @spec handle_ets_cleanup([atom(), ...], map(), map(), term()) :: :ok
   def handle_ets_cleanup(_event_name, _mesaurements, metadata, %{ets: ets}) do
-    with %{telemetry_metadata: key} <- metadata do
-      :ets.delete(ets, key)
+    with %{membrane_telemetry_label: label} <- metadata do
+      :ets.delete(ets, label)
     end
 
     :ok
