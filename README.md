@@ -59,10 +59,7 @@ metrics =
 
 Then, you have to start `Mebrane.TelemetryMetrics.Reporter`. It can be made by calling 
 ```elixir
-Membrane.TelemetryMetrics.Reporter.start_link(
-  [metrics: metrics], 
-  name: ShoppingReporter
-)
+Membrane.TelemetryMetrics.Reporter.start_link(metrics, name: ShoppingReporter)
 ```
 but the suggested way is to do it under `Supervisor` tree, in `Application` module.
 
