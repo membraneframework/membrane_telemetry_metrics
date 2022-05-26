@@ -28,7 +28,7 @@ To benefit from of full functionality offered by this tool, you have to use both
 
 First, put 
 ```elixir
-config :membrane_telemetry_metrics, emit_events: :all
+config :membrane_telemetry_metrics, enabled: true
 ```
 in your `config.exs`. Alternatively, instead of `:all`, you can also pass there a list of emitted events, in this case, it will be `[[:shopping]]`
 

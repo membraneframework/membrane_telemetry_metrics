@@ -19,8 +19,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   @type reporter() :: pid() | atom()
   @type report() :: map()
 
-  @spec start_link([metrics: [Telemetry.Metrics.t()]], GenServer.options()) ::
-          GenServer.on_start()
+  @spec start_link([Telemetry.Metrics.t()], GenServer.options()) :: GenServer.on_start()
   def start_link(init_arg, options \\ []) do
     options = Keyword.put(options, :trap_exit, true)
     GenServer.start_link(__MODULE__, init_arg, options)
@@ -41,10 +40,20 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     GenServer.stop(reporter)
   end
 
+  @spec child_spec(Keyword.t()) :: Supervisor.child_spec()
+  def child_spec(arg) do
+    {metrics, process_opts} = Keyword.pop(arg, :metrics, [])
+
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [metrics, process_opts]}
+    }
+  end
+
   @impl true
-  def init(init_arg) do
+  def init(metrics) do
     metrics_data =
-      Keyword.get(init_arg, :metrics, [])
+      metrics
       |> Enum.map(fn metric ->
         ets_table = create_ets_table()
         handler_ids = attach_handlers(metric, ets_table)

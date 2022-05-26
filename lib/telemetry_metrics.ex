@@ -4,7 +4,7 @@ defmodule Membrane.TelemetryMetrics do
   Provided macros evalueates to meaningful code or to nothing, depending on config values, in order to achieve performance boost, when specific event or whole telemetry is not in use.
   """
 
-  @enable Application.compile_env(:membrane_telemetry_metrics, :enable, false)
+  @enabled Application.compile_env(:membrane_telemetry_metrics, :enabled, false)
   @events Application.compile_env(:membrane_telemetry_metrics, :events, :all)
 
   @doc """
@@ -48,7 +48,7 @@ defmodule Membrane.TelemetryMetrics do
 
   defp emit_event?(event) do
     cond do
-      not @enable -> false
+      not @enabled -> false
       @events == :all -> true
       is_list(@events) -> event in @events
       true -> false
