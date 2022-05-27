@@ -158,14 +158,14 @@ defmodule Membrane.TelemetryMetrics.Reporter do
     end)
   end
 
-  defp mapify(report) when is_list(report) do
-    Map.new(report, fn {key, val} -> {key, mapify(val)} end)
+  defp to_deep_map(report) when is_list(report) do
+    Map.new(report, fn {key, val} -> {key, to_deep_map(val)} end)
   end
 
-  defp mapify(report), do: report
+  defp to_deep_map(report), do: report
 
   defp merge_metrics_reports(reports) do
-    Enum.map(reports, &mapify/1)
+    Enum.map(reports, &to_deep_map/1)
     |> Enum.reduce(%{}, &merge_metrics_reports/2)
   end
 

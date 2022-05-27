@@ -30,7 +30,7 @@ First, put
 ```elixir
 config :membrane_telemetry_metrics, enabled: true
 ```
-in your `config.exs`. Alternatively, instead of `:all`, you can also pass there a list of emitted events, in this case, it will be `[[:shopping]]`
+in your `config.exs`. You can also pass list of events, that will be enabled in `:events` option (in this case, it would be `[[:shopping]]`). If you don't specify that option, all events will be enabled.
 
 Let's assume, that you want to track three metrics: 
  * `cash_spent`

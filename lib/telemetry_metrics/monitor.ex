@@ -5,7 +5,7 @@ defmodule Membrane.TelemetryMetrics.Monitor do
 
   alias Membrane.TelemetryMetrics.Utils
 
-  @spec start([atom(), ...], [{atom(), any()}]) :: {:ok, pid()}
+  @spec start(:telemetry.event_name(), Membrane.TelemetryMetrics.label()) :: {:ok, pid()}
   def start(event_name, label) do
     pid =
       Process.spawn(
@@ -18,7 +18,7 @@ defmodule Membrane.TelemetryMetrics.Monitor do
     {:ok, pid}
   end
 
-  @spec run(pid() | atom(), [atom(), ...], [{atom(), any()}]) :: :ok
+  @spec run(pid() | atom(), :telemetry.event_name(), Membrane.TelemetryMetrics.label()) :: :ok
   def run(monitored_process, event_name, label) do
     Process.monitor(monitored_process)
 

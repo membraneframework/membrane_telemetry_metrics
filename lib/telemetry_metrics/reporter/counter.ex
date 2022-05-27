@@ -8,7 +8,12 @@ defmodule Membrane.TelemetryMetrics.Reporter.Counter do
     Utils.attach_metric_handler(metric.event_name, &__MODULE__.handle_event/4, %{ets: ets})
   end
 
-  @spec handle_event([atom(), ...], map(), map(), term()) :: :ok
+  @spec handle_event(
+          :telemetry.event_name(),
+          :telemetry.event_measurements(),
+          :telemetry.event_metadata(),
+          %{ets: :ets.tid() | atom()}
+        ) :: :ok
   def handle_event(_event_name, _measurements, metadata, %{ets: ets}) do
     with %{membrane_telemetry_label: label} <- metadata do
       :ets.update_counter(ets, label, 1, {label, 0})

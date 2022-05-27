@@ -7,6 +7,8 @@ defmodule Membrane.TelemetryMetrics do
   @enabled Application.compile_env(:membrane_telemetry_metrics, :enabled, false)
   @events Application.compile_env(:membrane_telemetry_metrics, :events, :all)
 
+  @type label() :: list()
+
   @doc """
   Evaluates to conditional call to `:telemetry.execute/3` or to nothing, depending on if specific event is enabled in config file.
   If event is enabled, `:telemetry.execute/3` will be executed only if value returned by call to `func` will be truthly.
@@ -14,8 +16,8 @@ defmodule Membrane.TelemetryMetrics do
   defmacro conditional_execute(
              func,
              event_name,
-             measurements \\ %{},
-             metadata \\ %{},
+             measurements,
+             metadata,
              label \\ []
            ) do
     if emit_event?(event_name) do
@@ -46,7 +48,7 @@ defmodule Membrane.TelemetryMetrics do
   @doc """
   Evaluates to call to `:telemetry.execute/3` or to nothing, depending on if specific event is enabled in config file.
   """
-  defmacro execute(event_name, measurments \\ %{}, metadata \\ %{}, label \\ []) do
+  defmacro execute(event_name, measurments, metadata, label \\ []) do
     if emit_event?(event_name) do
       quote do
         metadata = Map.put(unquote(metadata), :membrane_telemetry_label, unquote(label))
