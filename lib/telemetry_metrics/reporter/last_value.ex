@@ -18,7 +18,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.LastValue do
   def handle_event(_event_name, measurements, metadata, config) do
     %{ets: ets, measurement: measurement} = config
 
-    with %{membrane_telemetry_label: label} <- metadata,
+    with %{membrane_telemetrymetrics_label: label} <- metadata,
          %{^measurement => value} <- measurements do
       :ets.insert(ets, {label, value})
     end

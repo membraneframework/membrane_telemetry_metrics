@@ -15,7 +15,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.Counter do
           %{ets: :ets.tid() | atom()}
         ) :: :ok
   def handle_event(_event_name, _measurements, metadata, %{ets: ets}) do
-    with %{membrane_telemetry_label: label} <- metadata do
+    with %{membrane_telemetrymetrics_label: label} <- metadata do
       :ets.update_counter(ets, label, 1, {label, 0})
     end
 
