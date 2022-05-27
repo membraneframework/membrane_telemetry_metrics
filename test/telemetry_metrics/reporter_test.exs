@@ -38,9 +38,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     end
 
     assert %{
-             "counter" => 6,
-             "sum" => 145,
-             "last_value" => 2
+             counter: 6,
+             sum: 145,
+             last_value: 2
            } == Reporter.scrape(reporter)
 
     Reporter.stop(reporter)
@@ -61,7 +61,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
       Membrane.TelemetryMetrics.execute([:event], %{number: number}, %{}, id: 1)
     end
 
-    assert %{{:id, 1} => %{"counter" => 6, "sum" => 145, "last_value" => 2}} ==
+    assert %{{:id, 1} => %{counter: 6, sum: 145, last_value: 2}} ==
              Reporter.scrape(reporter)
 
     Reporter.stop(reporter)
@@ -76,7 +76,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
 
     {:ok, reporter} = Reporter.start_link(metrics)
 
-    labels = [[id: 1], [sub_id: "A", id: 2], [sub_id: "B", id: 2]]
+    labels = [[id: 1], [id: 2, sub_id: "A"], [id: 2, sub_id: "B"]]
 
     for label <- labels, do: Membrane.TelemetryMetrics.register([:event], label)
 
@@ -85,10 +85,10 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     end
 
     assert %{
-             {:id, 1} => %{"counter" => 6, "last_value" => 2, "sum" => 145},
+             {:id, 1} => %{counter: 6, last_value: 2, sum: 145},
              {:id, 2} => %{
-               {:sub_id, "A"} => %{"counter" => 6, "last_value" => 2, "sum" => 145},
-               {:sub_id, "B"} => %{"counter" => 6, "last_value" => 2, "sum" => 145}
+               {:sub_id, "A"} => %{counter: 6, last_value: 2, sum: 145},
+               {:sub_id, "B"} => %{counter: 6, last_value: 2, sum: 145}
              }
            } ==
              Reporter.scrape(reporter)
@@ -115,9 +115,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     end
 
     assert %{
-             {:id, 1} => %{"counter_a" => 1},
-             {:id, 2} => %{"counter_a" => 1, "counter_b" => 1},
-             {:id, 3} => %{"counter_b" => 1}
+             {:id, 1} => %{counter_a: 1},
+             {:id, 2} => %{counter_a: 1, counter_b: 1},
+             {:id, 3} => %{counter_b: 1}
            } == Reporter.scrape(reporter)
 
     Reporter.stop(reporter)
@@ -133,13 +133,13 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
 
     labels = [
       [id: 1],
-      [sub_id: "A", id: 1],
-      [sub_id: "B", id: 1],
-      [sub_sub_id: :a, sub_id: "A", id: 1],
+      [id: 1, sub_id: "A"],
+      [id: 1, sub_id: "B"],
+      [id: 1, sub_id: "A", sub_sub_id: :a],
       [id: 2],
-      [sub_id: "A", id: 2],
-      [sub_sub_id: :a, sub_id: "A", id: 2],
-      [sub_sub_id: :a, sub_id: "A", id: 3]
+      [id: 2, sub_id: "A"],
+      [id: 2, sub_id: "A", sub_sub_id: :a],
+      [id: 3, sub_id: "A", sub_sub_id: :a]
     ]
 
     for label <- labels, do: Membrane.TelemetryMetrics.register([:event], label)
@@ -151,26 +151,26 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     assert %{
              {:id, 1} => %{
                {:sub_id, "A"} => %{
-                 {:sub_sub_id, :a} => %{"counter_a" => 10, "counter_b" => 10},
-                 "counter_a" => 10,
-                 "counter_b" => 10
+                 {:sub_sub_id, :a} => %{counter_a: 10, counter_b: 10},
+                 :counter_a => 10,
+                 :counter_b => 10
                },
-               {:sub_id, "B"} => %{"counter_a" => 10, "counter_b" => 10},
-               "counter_a" => 10,
-               "counter_b" => 10
+               {:sub_id, "B"} => %{counter_a: 10, counter_b: 10},
+               :counter_a => 10,
+               :counter_b => 10
              },
              {:id, 2} => %{
                {:sub_id, "A"} => %{
-                 {:sub_sub_id, :a} => %{"counter_a" => 10, "counter_b" => 10},
-                 "counter_a" => 10,
-                 "counter_b" => 10
+                 {:sub_sub_id, :a} => %{counter_a: 10, counter_b: 10},
+                 :counter_a => 10,
+                 :counter_b => 10
                },
-               "counter_a" => 10,
-               "counter_b" => 10
+               :counter_a => 10,
+               :counter_b => 10
              },
              {:id, 3} => %{
                {:sub_id, "A"} => %{
-                 {:sub_sub_id, :a} => %{"counter_a" => 10, "counter_b" => 10}
+                 {:sub_sub_id, :a} => %{counter_a: 10, counter_b: 10}
                }
              }
            } == Reporter.scrape(reporter)
@@ -214,7 +214,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
       :event_emitted -> :ok
     end
 
-    assert %{{:id, 1} => %{"counter" => 1}} == Reporter.scrape(reporter)
+    assert %{{:id, 1} => %{counter: 1}} == Reporter.scrape(reporter)
 
     send(task_2, :emit_event)
 
@@ -223,8 +223,8 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     end
 
     assert %{
-             {:id, 1} => %{"counter" => 1},
-             {:id, 2} => %{"counter" => 1}
+             {:id, 1} => %{counter: 1},
+             {:id, 2} => %{counter: 1}
            } == Reporter.scrape(reporter)
 
     send(task_1, :stop)
@@ -235,7 +235,7 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
 
     Process.sleep(100)
 
-    assert %{{:id, 2} => %{"counter" => 1}} == Reporter.scrape(reporter)
+    assert %{{:id, 2} => %{counter: 1}} == Reporter.scrape(reporter)
 
     send(task_2, :stop)
 

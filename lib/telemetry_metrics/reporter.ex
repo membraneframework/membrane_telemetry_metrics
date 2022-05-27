@@ -60,7 +60,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
 
         %{
           metric: metric,
-          name: Enum.join(metric.name, "."),
+          name: Enum.join(metric.name, ".") |> String.to_atom(),
           ets_table: ets_table,
           handler_ids: handler_ids
         }
