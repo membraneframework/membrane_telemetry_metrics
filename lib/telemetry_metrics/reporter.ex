@@ -130,13 +130,6 @@ defmodule Membrane.TelemetryMetrics.Reporter do
   end
 
   defp aggregate_report(content) do
-    Enum.map(content, fn {key, value} ->
-      {Enum.reverse(key), value}
-    end)
-    |> do_aggregate_report()
-  end
-
-  defp do_aggregate_report(content) do
     {aggregated_content, content_to_aggregate} =
       Enum.split_with(content, fn {key, _val} -> key == [] end)
 
@@ -147,7 +140,7 @@ defmodule Membrane.TelemetryMetrics.Reporter do
       # value fun
       fn {[_head | tail], val} -> {tail, val} end
     )
-    |> Enum.map(fn {key, subcontent} -> {key, do_aggregate_report(subcontent)} end)
+    |> Enum.map(fn {key, subcontent} -> {key, aggregate_report(subcontent)} end)
     |> Enum.concat(aggregated_content)
   end
 
