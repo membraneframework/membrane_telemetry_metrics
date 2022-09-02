@@ -1,4 +1,7 @@
 version: 2.1
+orbs:
+  elixir: membraneframework/elixir@1
+
 commands:
   save_deps_cache:
     steps:
@@ -58,67 +61,10 @@ commands:
             - v1-dialyzer-cache-{{ checksum ".runtime_version" }}-
             - v1-dialyzer-cache-
 
-jobs:
-  build_test:
-    docker:
-      - image: membraneframeworklabs/docker_membrane
-        environment:
-          MIX_ENV: test
-
-    working_directory: ~/app
-
-    steps:
-      - workspace_init
-      - restore_build_cache:
-          env: test
-      - run: mix deps.compile
-      - run: mix compile --force --warnings-as-errors
-      - save_build_cache:
-          env: test
-      - run: mix deps.unlock --check-unused
-
-  test:
-    docker:
-      - image: membraneframeworklabs/docker_membrane:latest
-        environment:
-          MIX_ENV: test
-
-    working_directory: ~/app
-
-    steps:
-      - workspace_init
-      - restore_build_cache:
-          env: test
-      - run: mix compile
-      - run: mix test
-
-  lint:
-    docker:
-      - image: membraneframeworklabs/docker_membrane:latest
-        environment:
-          MIX_ENV: dev
-
-    working_directory: ~/app
-
-    steps:
-      - workspace_init
-      - restore_build_cache:
-          env: dev
-      - run: mix compile
-      - save_build_cache:
-          env: dev
-      - run: mix format --check-formatted
-      - run: mix credo
-      - run: mix docs && mix docs 2>&1 | (! grep -q "warning:")
-      - gen_version_file
-      - restore_plt_cache
-      - run: mix dialyzer
-      - save_plt_cache
-
 workflows:
   version: 2
   build:
     jobs:
-      - build_test
-      - test
-      - lint
+      - elixir/build_test
+      - elixir/test
+      - elixir/lint
