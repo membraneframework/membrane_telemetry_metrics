@@ -9,6 +9,8 @@ defmodule Membrane.TelemetryMetrics do
 
   @type label() :: list()
 
+  @dialyzer [{:nowarn_function, emit_event?: 1}]
+
   @doc """
   Evaluates to conditional call to `:telemetry.execute/3` or to nothing, depending on if specific event is enabled in config file.
   If event is enabled, `:telemetry.execute/3` will be executed only if value returned by call to `func` will be truthly.
