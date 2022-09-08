@@ -9,10 +9,6 @@ defmodule Membrane.TelemetryMetrics do
 
   @type label() :: list()
 
-  # Suppresses Dialyzer false-positive error occurring due to fact, that function contains match on module attribute known at compile time but can be overridden in the config file.
-  # Dialyzer returns an error saying, that pattern can never match the type, but it might be not true, in the case when somebody will change its value in the custom config file.
-  @dialyzer [{:no_match, emit_event?: 1}]
-
   @doc """
   Evaluates to conditional call to `:telemetry.execute/3` or to nothing, depending on if specific event is enabled in config file.
   If event is enabled, `:telemetry.execute/3` will be executed only if value returned by call to `func` will be truthly.
@@ -88,12 +84,10 @@ defmodule Membrane.TelemetryMetrics do
     end
   end
 
-  defp emit_event?(event) do
-    cond do
-      not @enabled -> false
-      @events == :all -> true
-      is_list(@events) -> event in @events
-      true -> false
-    end
+  cond do
+    not @enabled -> defp emit_event?(_event), do: false
+    @events == :all -> defp emit_event?(_event), do: true
+    is_list(@events) -> defp emit_event?(event), do: event in @events
+    true -> defp emit_event?(_event), do: false
   end
 end
