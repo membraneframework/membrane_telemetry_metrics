@@ -1,11 +1,19 @@
 defmodule Membrane.TelemetryMetrics.Utils do
   @moduledoc false
 
+  @type handler_config :: %{
+          :ets => :ets.tid() | atom(),
+          optional(:measurement) => Telemetry.Metrics.measurement()
+        }
+
   @cleanup_event_prefix :__membrane_telemetrymetrics_cleanup__
 
-  @spec attach_metric_handler(:telemetry.event_name(), :telemetry.handler_function(), %{
-          ets: :ets.tid() | atom()
-        }) :: [reference()]
+  @spec attach_metric_handler(
+          :telemetry.event_name(),
+          :telemetry.handler_function(),
+          handler_config()
+        ) ::
+          [reference()]
   def attach_metric_handler(event_name, handler_function, %{ets: ets} = config) do
     handler_id = make_ref()
     :telemetry.attach(handler_id, event_name, handler_function, config)
