@@ -1,5 +1,5 @@
 defmodule Membrane.TelemetryMetrics.Reporter.Test do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   require Membrane.TelemetryMetrics
 
@@ -246,6 +246,37 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     Process.sleep(100)
 
     assert %{} == Reporter.scrape(reporter)
+
+    Reporter.stop(reporter)
+  end
+
+  test "Only one process is created for metrics from the same process" do
+    metrics = [
+      Telemetry.Metrics.counter("counter", event_name: [:event])
+    ]
+
+    {:ok, reporter} = Reporter.start_link(metrics)
+
+    Membrane.TelemetryMetrics.register([:event], id: 0)
+
+    Membrane.TelemetryMetrics.execute([:event], %{}, %{}, id: 0)
+
+    process_num =
+      Process.list()
+      |> Enum.count()
+
+    Membrane.TelemetryMetrics.register([:event], id: 1)
+
+    Membrane.TelemetryMetrics.execute([:event], %{}, %{}, id: 1)
+
+    assert ^process_num =
+             Process.list()
+             |> Enum.count()
+
+    assert %{
+             {:id, 0} => %{counter: 1},
+             {:id, 1} => %{counter: 1}
+           } == Reporter.scrape(reporter)
 
     Reporter.stop(reporter)
   end
