@@ -7,13 +7,13 @@ defmodule Membrane.TelemetryMetrics.Monitor do
 
   @spec start(:telemetry.event_name(), Membrane.TelemetryMetrics.label()) :: {:ok, pid()}
   def start(event_name, label) do
-    if :ets.whereis(Membrane.TelemetryMetrics.Monitor) == :undefined do
-      :ets.new(Membrane.TelemetryMetrics.Monitor, [:public, :set, :named_table])
+    if :ets.whereis(__MODULE__) == :undefined do
+      :ets.new(__MODULE__, [:public, :set, :named_table])
     end
 
     self = self()
 
-    case :ets.lookup(Membrane.TelemetryMetrics.Monitor, self) do
+    case :ets.lookup(__MODULE__, self) do
       [] ->
         pid =
           Process.spawn(
@@ -23,7 +23,7 @@ defmodule Membrane.TelemetryMetrics.Monitor do
             []
           )
 
-        :ets.insert(Membrane.TelemetryMetrics.Monitor, {self, pid})
+        :ets.insert(__MODULE__, {self, pid})
 
         {:ok, pid}
 

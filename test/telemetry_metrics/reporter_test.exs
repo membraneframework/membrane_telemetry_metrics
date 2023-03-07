@@ -1,5 +1,5 @@
 defmodule Membrane.TelemetryMetrics.Reporter.Test do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   require Membrane.TelemetryMetrics
 
@@ -262,7 +262,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     Membrane.TelemetryMetrics.execute([:event], %{}, %{}, id: 0)
 
     process_num =
-      Process.list()
+      self()
+      |> Process.info(:monitored_by)
+      |> then(fn {:monitored_by, pids} -> pids end)
       |> Enum.count()
 
     Membrane.TelemetryMetrics.register([:event], id: 1)
@@ -270,7 +272,9 @@ defmodule Membrane.TelemetryMetrics.Reporter.Test do
     Membrane.TelemetryMetrics.execute([:event], %{}, %{}, id: 1)
 
     assert ^process_num =
-             Process.list()
+             self()
+             |> Process.info(:monitored_by)
+             |> then(fn {:monitored_by, pids} -> pids end)
              |> Enum.count()
 
     assert %{
