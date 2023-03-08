@@ -8,7 +8,11 @@ defmodule Membrane.TelemetryMetrics.Monitor do
   @spec start(:telemetry.event_name(), Membrane.TelemetryMetrics.label()) :: {:ok, pid()}
   def start(event_name, label) do
     if :ets.whereis(__MODULE__) == :undefined do
-      :ets.new(__MODULE__, [:public, :set, :named_table])
+      try do
+        :ets.new(__MODULE__, [:public, :set, :named_table])
+      rescue
+        _error in ArgumentError -> :ignored
+      end
     end
 
     self = self()
