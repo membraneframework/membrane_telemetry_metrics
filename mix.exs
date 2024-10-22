@@ -1,7 +1,7 @@
 defmodule Membrane.TelemetryMetrics.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @github_url "https://github.com/membraneframework/membrane_telemetry_metrics"
 
   def project do
@@ -38,7 +38,7 @@ defmodule Membrane.TelemetryMetrics.Mixfile do
   defp deps do
     [
       {:telemetry, "~> 1.0"},
-      {:telemetry_metrics, "~> 0.6.1"},
+      {:telemetry_metrics, "~> 1.0 or ~> 0.6.1"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
