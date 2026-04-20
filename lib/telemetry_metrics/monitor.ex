@@ -31,7 +31,7 @@ defmodule Membrane.TelemetryMetrics.Monitor do
 
         {:ok, pid}
 
-      [{^self, pid} | _] ->
+      [{^self, pid} | _rest] ->
         send(pid, {event_name, label})
         {:ok, pid}
     end
