@@ -15,7 +15,7 @@ The package can be installed by adding `membrane_telemetry_metrics` to your list
 ```elixir
 def deps do
   [
-    {:membrane_telemetry_metrics, "~> 0.1.0"}
+    {:membrane_telemetry_metrics, "~> 0.1.2"}
   ]
 end
 ```
