@@ -39,16 +39,15 @@ defmodule Membrane.TelemetryMetrics.Mixfile do
     [
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 1.0 or ~> 0.6.1"},
-      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.4", only: :dev, runtime: false},
-      {:credo, "~> 1.7", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
+      {:credo, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
   defp dialyzer() do
     opts = [
-      flags: [:error_handling],
-      plt_add_apps: [:mix, :syntax_tools]
+      flags: [:error_handling]
     ]
 
     if System.get_env("CI") == "true" do
